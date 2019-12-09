@@ -18,12 +18,11 @@ namespace ringba_api_call
         private readonly HttpClient _client;
 
         private AuthToken _authToken;
-        private string _accountId;
+
 
         private RingbaApiRequester(AuthToken authToken, string accountId)
         {
             _authToken = authToken;
-            _accountId = accountId;
 
             _client = new HttpClient()
             {

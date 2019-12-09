@@ -1,7 +1,7 @@
 ﻿using ringba_api_call;
+
 using System;
-using System.Net.Http;
-using System.Text;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace call_logs
@@ -10,6 +10,7 @@ namespace call_logs
     {
         private static void Main(string[] args)
         {
+
             string username = "";
             string password = "";
             string accountId = "";
@@ -21,10 +22,11 @@ namespace call_logs
 
                 var service = new CallLogService(client);
 
-                foreach (var record in await service.GetCallLogsAsync(DateTime.Now.AddDays(-1)))
+                foreach (var record in (await service.GetCallLogsAsync(DateTime.Now, 500)).Where(r => r.IsLive))
                 {
-                    Console.WriteLine(record.callerId);
+                    Console.WriteLine($"{record.Id}\t{record.CallerId}\t{record.DialedNumber}\t{record.TargetNumber}");
                 }
+
             }).Wait();
         }
     }
