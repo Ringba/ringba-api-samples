@@ -6,7 +6,7 @@ namespace ringba_api_call
     public interface IRingbaApiRequester
     {
         /// <summary>
-        /// used to send autheticated requests
+        /// used to send authenticated requests
         /// </summary>
         /// <param name="path">the path to the api</param>
         /// <param name="content">the body to post</param>
