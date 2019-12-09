@@ -13,5 +13,12 @@ namespace ringba_api_call
         /// <param name="endTime"></param>
         /// <returns></returns>
         Task<IEnumerable<(string id, string callerId, string dialedNumber, string targetNumber, int callLength, int connectedCallLength, string state, DateTimeOffset callTime, bool isLive)>> GetCallLogsAsync(DateTime startTime, DateTime? endTime = null);
+
+        public enum ReportDataType
+        {
+            events,
+            columns,
+            tags
+        }
     }
 }

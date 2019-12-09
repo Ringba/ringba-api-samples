@@ -6,6 +6,11 @@ namespace ringba_api_call.Helper
 {
     public static class DictionaryHelper
     {
+        public static bool HasValue(this IDictionary<string, JsonElement> dic, string key)
+        {
+            return dic.TryGetValue(key, out JsonElement value);
+        }
+
         public static string GetValue(this IDictionary<string, JsonElement> dic, string key)
         {
             if (dic.TryGetValue(key, out JsonElement value))

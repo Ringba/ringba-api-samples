@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using static ringba_api_call.ICallLogsService;
 
 namespace ringba_api_call
 {
@@ -42,17 +43,19 @@ namespace ringba_api_call
                     try
                     {
                         IDictionary<string, JsonElement> columns = _ConvertColumnsToDictionary(r);
+                        IDictionary<string, JsonElement> events = _ConvertEventsToDictionary(r);
+                        IDictionary<string, JsonElement> tags = _ConvertTagsToDictionary(r);
 
                         return (
                         columns.GetValue("inboundCallId"),
                         columns.GetValue("inboundPhoneNumber"),
                         columns.GetValue("number"),
                         columns.GetValue("inboundCallId"),
-                       (int)columns.GetDecimalValue("callLengthInSeconds"),
+                        (int)columns.GetDecimalValue("callLengthInSeconds"),
                         (int)columns.GetDecimalValue("callConnectionLength"),
-                        "ny",//string state,
+                        tags.GetValue("InboundNumber:Region"),
                         DateTimeOffset.FromUnixTimeMilliseconds(columns.GetLongValue("dtStamp")),
-                        false//bool isLive
+                        events.IsCallLive()
                         );
                     }
                     catch (Exception)
@@ -67,18 +70,50 @@ namespace ringba_api_call
 
         private IDictionary<string, JsonElement> _ConvertColumnsToDictionary(JsonElement row)
         {
-            return row.GetProperty("columns")
+            return _ConvertDataToDictionary(ReportDataType.columns, row, (JsonElement r) =>
+            {
+                if (r.TryGetProperty("name", out var name) && (r.TryGetProperty("formattedValue", out var val) || r.TryGetProperty("original", out val)))
+                {
+                    return (name.GetString(), val);
+                }
+
+                return (string.Empty, new JsonElement());
+            });
+        }
+
+        private IDictionary<string, JsonElement> _ConvertEventsToDictionary(JsonElement row)
+        {
+            return _ConvertDataToDictionary(ReportDataType.events, row, (JsonElement r) =>
+            {
+                if (r.TryGetProperty("name", out var name) && (r.TryGetProperty("weigth", out var val)))
+                {
+                    return (name.GetString(), val);
+                }
+
+                return (string.Empty, new JsonElement());
+            });
+        }
+
+        private IDictionary<string, JsonElement> _ConvertTagsToDictionary(JsonElement row)
+        {
+            return _ConvertDataToDictionary(ReportDataType.tags, row, (JsonElement r) =>
+            {
+                if (r.TryGetProperty("tagName", out var tagName) && r.TryGetProperty("tagType", out var tagType) && (r.TryGetProperty("tagValue", out var val)))
+                {
+                    return ($"{tagType.GetString()}:{tagName.GetString()}", val);
+                }
+
+                return (string.Empty, new JsonElement());
+            });
+        }
+
+        private IDictionary<string, JsonElement> _ConvertDataToDictionary(ReportDataType ReportDataType, JsonElement row, Func<JsonElement, (string, JsonElement)> PopulateItem)
+        {
+            return row.GetProperty(ReportDataType.ToString())
                 .EnumerateArray()
                 .Select(r =>
                 {
-                    if (r.TryGetProperty("name", out var name) && (r.TryGetProperty("formattedValue", out var val) || r.TryGetProperty("original", out val)))
-                    {
-                        return (name.GetString(), val);
-                    }
-                    else
-                    {
-                        return (string.Empty, new JsonElement());
-                    }
+                    return PopulateItem(r);
                 })
                 .Where(kv => !string.IsNullOrEmpty(kv.Item1))
                 .ToDictionary(c => c.Item1, c => c.Item2);
